@@ -12,11 +12,14 @@ class ListPanel(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(8)
 
         self.list = QListWidget()
         layout.addWidget(self.list)
 
         btn_row = QHBoxLayout()
+        btn_row.setSpacing(8)
         self.btn_add = QPushButton("Add")
         self.btn_edit = QPushButton("Edit")
         self.btn_delete = QPushButton("Delete")

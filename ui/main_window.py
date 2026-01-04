@@ -22,7 +22,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         
         self.setWindowTitle("CramIt - Planner")
-        self.resize(1000, 700)
+        self.resize(1400, 900)
         
         # Initialize controller
         self.controller = ActivityController()
@@ -39,11 +39,13 @@ class MainWindow(QMainWindow):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         layout = QHBoxLayout(central_widget)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(0)
         
         splitter = QSplitter(Qt.Orientation.Horizontal)
+        splitter.setHandleWidth(1)
         
-        # Create panels (modular widgets)
+        # Create panels 
         self.list_panel = ListPanel()
         self.calendar_panel = CalendarPanel()
         self.analytics_panel = AnalyticsPanel()
@@ -140,5 +142,9 @@ class MainWindow(QMainWindow):
         ids = [a.id for a in activities]
         self.list_panel.set_items(items, ids)
         
+        # Update calendar panel with activities
+        self.calendar_panel.update_activities(activities)
+        
         # Update analytics
+        self.analytics_panel.update_from(activities)
         self.analytics_panel.update_from(activities)
