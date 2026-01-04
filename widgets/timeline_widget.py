@@ -25,9 +25,9 @@ class WeekTimelineWidget(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
-        # Get current week
+        # Get current week starting at midnight
         today = datetime.now()
-        week_start = today - timedelta(days=today.weekday())
+        week_start = today.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=today.weekday())
         
         # Dimensions - calculate based on available width
         width = self.width()
@@ -44,8 +44,9 @@ class WeekTimelineWidget(QWidget):
             day_end = day_date + timedelta(days=1)
             y_pos = header_height + day_idx * day_height
             
-            print(f"\n=== Day {day_idx}: {day_date.date()} ===")
-            print(f"Day range: {day_date} to {day_end}")
+            # DEBUG: Uncomment to see day boundaries
+            # print(f"\n=== Day {day_idx}: {day_date.date()} ===")
+            # print(f"Day range: {day_date} to {day_end}")
             
             # Draw day label
             day_name = day_date.strftime("%A, %b %d")
@@ -76,40 +77,50 @@ class WeekTimelineWidget(QWidget):
                         painter.setPen(QPen(BORDER_COLOR, 1))
             
             # Draw activities for this day
+            # DEBUG: Uncomment to see activity matching
+            # print(f"\nChecking activities for day range: {day_date} to {day_end}")
+            # for a in self.activities:
+            #     matches = a.start < day_end and a.end > day_date
+            #     print(f"  {a.name}: start={a.start}, end={a.end}, matches={matches}")
+            #     if matches:
+            #         print(f"    -> start < day_end? {a.start} < {day_end} = {a.start < day_end}")
+            #         print(f"    -> end > day_date? {a.end} > {day_date} = {a.end > day_date}")
+            
             day_activities = [a for a in self.activities 
                             if a.start < day_end and a.end > day_date]
             
-            print(f"Found {len(day_activities)} activities for this day")
+            # DEBUG: Uncomment to see activity count
+            # print(f"Found {len(day_activities)} activities for this day}")
             
             for activity in day_activities:
                 # Calculate which portion of the activity falls within this day
                 # Use the activity's actual start/end times, but clamp to day boundaries
                 
-                # Debug: print activity info
-                print(f"\n--- Activity: {activity.name} ---")
-                print(f"Full activity: {activity.start} to {activity.end}")
-                print(f"Current day: {day_date.date()}")
+                # DEBUG: Uncomment to see activity info
+                # print(f"\n--- Activity: {activity.name} ---")
+                # print(f"Full activity: {activity.start} to {activity.end}")
+                # print(f"Current day: {day_date.date()}")
                 
                 # If activity starts before this day, draw from beginning (hour 0)
                 if activity.start.date() < day_date.date():
                     start_hour = 0.0
-                    print(f"Activity starts before this day, using start_hour=0")
+                    # print(f"Activity starts before this day, using start_hour=0")
                 else:
                     # Activity starts on this day, use actual hour
                     start_hour = activity.start.hour + activity.start.minute / 60.0
-                    print(f"Activity starts on this day at {activity.start.hour}:{activity.start.minute}, start_hour={start_hour:.2f}")
+                    # print(f"Activity starts on this day at {activity.start.hour}:{activity.start.minute}, start_hour={start_hour:.2f}")
                 
                 # If activity ends after this day, draw to end (hour 24)
                 if activity.end.date() > day_date.date():
                     end_hour = 24.0
-                    print(f"Activity ends after this day, using end_hour=24")
+                    # print(f"Activity ends after this day, using end_hour=24")
                 else:
                     # Activity ends on this day, use actual hour
                     end_hour = activity.end.hour + activity.end.minute / 60.0
-                    print(f"Activity ends on this day at {activity.end.hour}:{activity.end.minute}, end_hour={end_hour:.2f}")
+                    # print(f"Activity ends on this day at {activity.end.hour}:{activity.end.minute}, end_hour={end_hour:.2f}")
                 
                 duration_hours = end_hour - start_hour
-                print(f"Drawing from hour {start_hour:.2f} to {end_hour:.2f} (duration: {duration_hours:.2f}h)")
+                # print(f"Drawing from hour {start_hour:.2f} to {end_hour:.2f} (duration: {duration_hours:.2f}h)")
                 
                 # Calculate pixel position
                 act_x = timeline_x + start_hour * hour_width
