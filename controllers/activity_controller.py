@@ -1,7 +1,7 @@
 """Activity controller - handles business logic for activity management."""
 from PyQt6.QtWidgets import QMessageBox
-from models import Activity
-from storage import load_activities, save_activities
+from utils.models import Activity
+from utils.storage import load_activities, save_activities
 
 
 class ActivityController:

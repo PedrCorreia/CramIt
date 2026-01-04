@@ -1,7 +1,7 @@
 """Storage functions for activities."""
 import json
 from pathlib import Path
-from models import Activity
+from utils.models import Activity
 
 
 STORAGE_DIR = Path.home() / ".cramit"

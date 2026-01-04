@@ -4,8 +4,8 @@ from PyQt6.QtCore import Qt
 from widgets.list_panel import ListPanel
 from widgets.calendar_panel import CalendarPanel
 from widgets.analytics_panel import AnalyticsPanel
-from controllers import ActivityController
-from dialogs import TaskDialog
+from controllers.activity_controller import ActivityController
+from utils.dialogs import TaskDialog
 
 
 class MainWindow(QMainWindow):
