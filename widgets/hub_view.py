@@ -1,6 +1,6 @@
 """Hub view for displaying week/month/year activity timelines and statistics."""
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QStackedWidget, QLabel, QPushButton, QHBoxLayout, QFrame, QGridLayout
-from PyQt6.QtGui import QColor
+from PyQt6.QtCore import Qt
 from widgets.donut_widget import DonutWidget
 from widgets.timeline_widget import WeekTimelineWidget
 from utils.date_helpers import (
@@ -8,6 +8,7 @@ from utils.date_helpers import (
     calculate_activity_stats,
     calculate_stats_by_type
 )
+from utils.colors import ACTIVITY_COLORS
 
 
 class HubWidget(QWidget):
@@ -88,16 +89,16 @@ class HubWidget(QWidget):
         
         layout = QHBoxLayout(donut_frame)
         layout.setSpacing(20)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
-        # Create donut widgets for each type
-        self.work_donut = DonutWidget("Work", QColor("#4a5568"))
-        self.school_donut = DonutWidget("School", QColor("#2563eb"))
-        self.hobbies_donut = DonutWidget("Hobbies", QColor("#7c3aed"))
+        # Create donut widgets for each type (using centralized colors)
+        self.work_donut = DonutWidget("Work", ACTIVITY_COLORS["work"])
+        self.school_donut = DonutWidget("School", ACTIVITY_COLORS["school"])
+        self.hobbies_donut = DonutWidget("Hobbies", ACTIVITY_COLORS["hobbies"])
         
         layout.addWidget(self.work_donut)
         layout.addWidget(self.school_donut)
         layout.addWidget(self.hobbies_donut)
-        layout.addStretch()
         
         return donut_frame
     
@@ -161,6 +162,12 @@ class HubWidget(QWidget):
         work_completed, work_total = calculate_stats_by_type(week_activities, "work")
         school_completed, school_total = calculate_stats_by_type(week_activities, "school")
         hobbies_completed, hobbies_total = calculate_stats_by_type(week_activities, "hobbies")
+        
+        # Update donut colors based on completion
+        from utils.colors import EXECUTED_COLORS
+        self.work_donut.color = EXECUTED_COLORS["work"] if work_completed > 0 else ACTIVITY_COLORS["work"]
+        self.school_donut.color = EXECUTED_COLORS["school"] if school_completed > 0 else ACTIVITY_COLORS["school"]
+        self.hobbies_donut.color = EXECUTED_COLORS["hobbies"] if hobbies_completed > 0 else ACTIVITY_COLORS["hobbies"]
         
         self.work_donut.set_values(work_completed, work_total)
         self.school_donut.set_values(school_completed, school_total)
