@@ -1,8 +1,9 @@
 """Hub view for displaying week/month/year activity timelines and statistics."""
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QStackedWidget, QLabel, QPushButton, QHBoxLayout, QFrame, QGridLayout, QScrollArea
-from PyQt6.QtCore import Qt, QRectF
-from PyQt6.QtGui import QPainter, QColor, QPen, QBrush
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QStackedWidget, QLabel, QPushButton, QHBoxLayout, QFrame, QGridLayout
+from PyQt6.QtGui import QColor
 from datetime import datetime, timedelta
+from widgets.donut_widget import DonutWidget
+from widgets.timeline_widget import WeekTimelineWidget
 
 
 class HubWidget(QWidget):
@@ -146,6 +147,32 @@ class HubWidget(QWidget):
         """Update the hub views with activity data."""
         self.timeline_widget.set_activities(activities)
         self._update_dashboard(activities)
+        self._update_donuts(activities)
+    
+    def _update_donuts(self, activities):
+        """Update donut graphs with activity data."""
+        # Get current week
+        today = datetime.now()
+        week_start = today - timedelta(days=today.weekday())
+        week_end = week_start + timedelta(days=7)
+        
+        # Filter activities for this week
+        week_activities = [a for a in activities 
+                          if week_start <= a.start < week_end]
+        
+        # Calculate totals by type
+        work_total = sum(a.planned_hours for a in week_activities if a.type == "work")
+        work_completed = sum(a.planned_hours for a in week_activities if a.type == "work" and a.executed)
+        
+        school_total = sum(a.planned_hours for a in week_activities if a.type == "school")
+        school_completed = sum(a.planned_hours for a in week_activities if a.type == "school" and a.executed)
+        
+        hobbies_total = sum(a.planned_hours for a in week_activities if a.type == "hobbies")
+        hobbies_completed = sum(a.planned_hours for a in week_activities if a.type == "hobbies" and a.executed)
+        
+        self.work_donut.set_values(work_completed, work_total)
+        self.school_donut.set_values(school_completed, school_total)
+        self.hobbies_donut.set_values(hobbies_completed, hobbies_total)
     
     def _update_dashboard(self, activities):
         """Update dashboard statistics for current week."""
@@ -174,7 +201,8 @@ class WeekTimelineWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.activities = []
-        self.setMinimumHeight(600)
+        self.setMinimumHeight(500)
+        self.setMaximumHeight(500)
         
     def set_activities(self, activities):
         """Set activities to display on timeline."""
@@ -192,12 +220,12 @@ class WeekTimelineWidget(QWidget):
         
         # Dimensions - calculate based on available width
         width = self.width()
-        day_height = 60  # Thinner bars
-        header_height = 40
+        day_height = 65  # More spaced
+        header_height = 50
         day_label_width = 150
         timeline_x = day_label_width
-        timeline_width = width - day_label_width - 20  # Leave margin on right
-        hour_width = timeline_width / 24  # Dynamic width per hour
+        timeline_width = width - day_label_width - 20
+        hour_width = timeline_width / 24
         
         # Draw day rows
         for day_idx in range(7):
@@ -208,17 +236,30 @@ class WeekTimelineWidget(QWidget):
             # Draw day label
             day_name = day_date.strftime("%A, %b %d")
             painter.setPen(QPen(QColor("#ffffff")))
-            painter.drawText(10, y_pos + 20, day_name)
+            painter.drawText(10, y_pos + 25, day_name)
             
-            # Draw timeline bar (rounded rectangle)
-            timeline_y = y_pos + 8
-            timeline_height = day_height - 16  # More compact
+            # Draw timeline bar
+            timeline_y = y_pos + 10
+            timeline_height = day_height - 20
             
             # Background timeline
             painter.setBrush(QBrush(QColor("#1e1e1e")))
             painter.setPen(QPen(QColor("#3a3a3a"), 1))
             painter.drawRoundedRect(int(timeline_x), int(timeline_y), 
                                    int(timeline_width), int(timeline_height), 8, 8)
+            
+            # Draw hour markers (every hour)
+            painter.setPen(QPen(QColor("#3a3a3a"), 1))
+            for hour in range(0, 25):
+                x = int(timeline_x + hour * hour_width)
+                # Draw small tick marks
+                if hour < 24:
+                    painter.drawLine(x, int(timeline_y), x, int(timeline_y + 5))
+                    # Draw hour labels every 3 hours
+                    if hour % 3 == 0:
+                        painter.setPen(QPen(QColor("#888888")))
+                        painter.drawText(x + 2, int(timeline_y - 8), f"{hour:02d}")
+                        painter.setPen(QPen(QColor("#3a3a3a"), 1))
             
             # Draw activities for this day
             day_activities = [a for a in self.activities 
@@ -243,8 +284,8 @@ class WeekTimelineWidget(QWidget):
                 
                 act_x = timeline_x + start_hour * hour_width
                 act_width = duration_hours * hour_width
-                act_y = timeline_y + 3
-                act_height = timeline_height - 6
+                act_y = timeline_y + 4
+                act_height = timeline_height - 8
                 
                 # Choose color based on type and executed status
                 if activity.executed:
@@ -267,3 +308,62 @@ class WeekTimelineWidget(QWidget):
                     text_rect = QRectF(act_x + 5, act_y, act_width - 10, act_height)
                     painter.drawText(text_rect, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
                                    activity.name[:15])
+
+
+class DonutWidget(QWidget):
+    """Circular donut graph showing completed vs total hours."""
+    
+    def __init__(self, title, color, parent=None):
+        super().__init__(parent)
+        self.title = title
+        self.color = color
+        self.completed = 0
+        self.total = 0
+        self.setMinimumSize(120, 120)
+        self.setMaximumSize(120, 120)
+    
+    def set_values(self, completed, total):
+        """Update the donut values."""
+        self.completed = completed
+        self.total = total
+        self.update()
+    
+    def paintEvent(self, event):
+        """Paint the donut graph."""
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        # Center and radius
+        center_x = self.width() // 2
+        center_y = 45
+        outer_radius = 35
+        inner_radius = 25
+        
+        # Draw background circle
+        painter.setPen(QPen(QColor("#3a3a3a"), 10))
+        painter.setBrush(QBrush(Qt.GlobalColor.transparent))
+        painter.drawEllipse(center_x - outer_radius, center_y - outer_radius, 
+                          outer_radius * 2, outer_radius * 2)
+        
+        # Draw progress arc
+        if self.total > 0:
+            percentage = self.completed / self.total
+            span_angle = int(360 * 16 * percentage)  # Qt uses 1/16th degree units
+            
+            painter.setPen(QPen(self.color, 10))
+            painter.drawArc(center_x - outer_radius, center_y - outer_radius,
+                          outer_radius * 2, outer_radius * 2,
+                          90 * 16, -span_angle)  # Start from top, go clockwise
+        
+        # Draw center text
+        painter.setPen(QPen(QColor("#ffffff")))
+        if self.total > 0:
+            text = f"{self.completed:.0f}/{self.total:.0f}h"
+        else:
+            text = "0h"
+        painter.drawText(center_x - 30, center_y - 5, 60, 20, 
+                        Qt.AlignmentFlag.AlignCenter, text)
+        
+        # Draw title
+        painter.drawText(0, 95, self.width(), 20, 
+                        Qt.AlignmentFlag.AlignCenter, self.title)
